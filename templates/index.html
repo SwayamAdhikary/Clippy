@@ -1,0 +1,102 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shared Clipboard</title>
+    <style>
+        body {
+            background-color: #2c3e50; /* Dark blue/purple background */
+            color: #ecf0f1; /* Light text color */
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 20px;
+        }
+        textarea {
+            width: 80%;
+            height: 50%;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            margin-top: 20px;
+            font-size: 1.2rem;
+            resize: none;
+            background-color: #34495e; /* Background for textarea */
+            color: #ecf0f1; /* Text color */
+        }
+        textarea:focus {
+            outline: none;
+            border: 2px solid #2980b9; /* Outline color on focus */
+        }
+        button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            background-color: #2980b9; /* Button color */
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #3498db; /* Button hover color */
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.js"></script>
+</head>
+<body>
+    <h1>Clippy 📎 - Topic: {{ topic }}</h1>
+    <textarea id="clipboard" placeholder="Type your text here..."></textarea>
+    <button id="copy-button">Copy Text</button> <!-- Copy Text button -->
+    <button id="end-session-button">End Session</button> <!-- End Session button -->
+
+    <script>
+        var socket = io.connect('http://' + document.domain + ':' + location.port);
+        var topic = "{{ topic }}";
+
+        // Listen for text updates for the specific topic
+        socket.on('update text', function(data) {
+            if (data.topic === topic) {
+                document.getElementById('clipboard').value = data.text;
+            }
+        });
+
+        // Send text updates to the server, along with the topic
+        document.getElementById('clipboard').addEventListener('input', function() {
+            socket.emit('text update', { text: this.value, topic: topic });
+        });
+
+        // Function to copy text to clipboard
+        document.getElementById('copy-button').addEventListener('click', function() {
+            var textArea = document.getElementById('clipboard');
+            textArea.select();
+            textArea.setSelectionRange(0, 99999); // For mobile devices
+
+            // Copy the text inside the textarea
+            navigator.clipboard.writeText(textArea.value)
+                .then(() => {
+                    // alert('Text copied to clipboard!'); // Removed alert
+                })
+                .catch(err => {
+                    console.error('Failed to copy: ', err);
+                });
+        });
+
+        // End Session function
+        document.getElementById('end-session-button').addEventListener('click', function() {
+            socket.disconnect(); // Disconnect from the Socket.IO server
+            window.location.href = '/'; // Redirect to the login page
+        });
+    </script>
+</body>
+</html>
